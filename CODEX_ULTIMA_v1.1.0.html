@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CODEX ULTIMA v1.1.0 - Suite per Game Master</title>
+  <title>CODEX ULTIMA v1.1.1 - Suite per Game Master</title>
   <style>
     :root {
       --fu-primary: #2b3a4a; --fu-secondary: #1e6b7b; --fu-accent: #d97724;
@@ -191,7 +191,7 @@
 <div class="container">
   <header class="suite-header">
     <h1 class="suite-title">CODEX ULTIMA - Suite per Game Master</h1>
-    <p class="suite-sub">Strumenti per Fabula Ultima · v1.1.0</p>
+    <p class="suite-sub">Strumenti per Fabula Ultima · v1.1.1</p>
   </header>
 <!-- Backup/ripristino esclusivamente dei dati personali (localStorage) -->
 <section class="codex-db-panel" aria-label="Gestione Database Personale">
@@ -364,6 +364,7 @@
           <div class="field-box"><label>Zenit in Tasca (Editabile)</label><input type="number" id="pcZenit" value="120" oninput="recalculateStats()"></div>
         </div>
         <div class="field-box" style="margin-top: 10px;"><label>Dettagli Attacco Arma & Note</label><input type="text" id="weaponDetails"></div>
+        <div id="technoPregenSource" style="display:none;margin-top:12px;padding:12px;background:#f5faf8;border:1px solid #81a7a0;border-radius:7px;line-height:1.5;white-space:pre-wrap;font-size:.85rem"></div>
         <div id="martialWarning" class="warning-banner">⚠️ Attenzione: hai selezionato un oggetto Marziale (✦) per cui il PG non possiede il Beneficio Gratuito richiesto!</div>
       </div>
     </div>
@@ -1336,7 +1337,28 @@ function bsNativeSections(n) {
   const equipment = [['Armatura',n.armor],['Scudo',n.shield || n.sheild]].filter(x => x[1] && typeof x[1] === 'object' && Object.keys(x[1]).length);
   if (equipment.length) out += section('Equipaggiamento', equipment.map(([title,obj]) => line(title + ': ' + (obj.name || 'senza nome'), JSON.stringify(obj, null, 2))));
   const extras = n.extra && typeof n.extra === 'object' ? n.extra : {};
-  if (Object.keys(extras).length) out += section('Modificatori e opzioni Fultimator', [line('extra', JSON.stringify(extras, null, 2))]);
+  if (Object.keys(extras).length) {
+    const labels = {
+      hp: 'PV massimi', mp: 'PM massimi', def: 'Difesa', mDef: 'Difesa Magica',
+      init: 'Iniziativa', precision: 'Precisione', magic: 'Magia',
+      defOverride: 'Difesa fissa', mDefOverride: 'Difesa Magica fissa'
+    };
+    const entries = Object.entries(extras).map(([key, value]) => {
+      const label = labels[key] || key.replace(/([a-z])([A-Z])/g, '$1 $2');
+      let readable;
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        readable = (value > 0 ? '+' : '') + value;
+      } else if (typeof value === 'boolean') {
+        readable = value ? 'Sì' : 'No';
+      } else if (typeof value === 'string') {
+        readable = value;
+      } else {
+        readable = JSON.stringify(value);
+      }
+      return line(label, readable);
+    });
+    out += section('Modificatori e opzioni Fultimator', entries);
+  }
   if (arr('tags').length) out += section('Etichette', [line(arr('tags').map(x => x.name || str(x)).join(', '), '')]);
   if (n.rank && !['soldier','elite','champion','champion1','champion2','champion3','champion4','champion5','champion6'].includes(n.rank)) out += section('Rango speciale Fultimator', [line(str(n.rank), 'Nota: nella generazione incontri CODEX il rango speciale è trattato come Soldato.')]);
   if (n.sizes) out += section('Taglia', [line(str(n.sizes), '')]);
@@ -3893,7 +3915,26 @@ Object.keys(CLASSES_DB).forEach(itKey => {
   FULTIMATOR_TO_IT_CLASS[CLASSES_DB[itKey].fultimatorName] = itKey;
 });
 
+// v1.1.1: 3 pregenerati Techno Fantasy + 10 da Premi Start / Bravely Default II.
+// I nuovi 10 preset usano invece equipaggiamento e abilità standard del CODEX.
 const PRESET_PCS = [
+  // PREGNERATI DELL'ATLANTE TECHNO FANTASY (PDF esterno, 3 pagine)
+  {"archetype": "Catlin Xalco (Pregenerati Techno Fantasy, p. 1)","book": "techno","des": 8,"int": 8,"vig": 8,"vol": 8,"classes": [{"name": "Pilota","lvl": 2,"skills": "Veicolo Personale (Crimson Blade; Blindatura Pesante, Claymore, Antimissilistico)"},{"name": "Comandante","lvl": 2,"skills": "Cavallo in Carica, Stratagemma della Regina"},{"name": "Maestro d'Armi","lvl": 1,"skills": "Tempesta di Lame"}],"weapon": "Nessuna Arma","armor": "Nessuna Armatura","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Catlin Xalco","fixedIdentity": "Carismatica Pilota Ribelle","fixedTheme": "Dovere","fixedOrigin": "Minerva IV","sourceStats": {"hp": 60,"mp": 45,"ip": 6,"def": 11,"mdef": 9,"init": -2},"sourceNotes": [{"name": "Gladioscudo","description": "Mischia; Precisione 【DES + VIG】+2; 【TM + 10】 danni fisici; +2 DIF."},{"name": "Giacca Pesante","description": "+1 DIF, +1 DIF. MAG.; -1 Iniziativa."},{"name": "Crimson Blade","description": "Veicolo Personale (mecha). Blindatura Pesante: DIF fissa 12, DIF. MAG. fissa 8. Modulo Claymore: Precisione 【DES + INT】+1; 【TM + 14】 danni fisici. Modulo Antimissilistico: dopo un attacco a distanza subito, spendi 1 PI per infliggere 10 danni fisici all’attaccante."},{"name": "Stratagemma della Regina","description": "Durante un conflitto, usa un’azione per un attacco gratuito con l’arma equipaggiata; se colpisce, TM=0 per il danno. Poi scegli: un alleato che ti sente recupera 10 PV, oppure spendi 10 PM per concedere a un alleato che ti sente un attacco gratuito con +1 al Test di Precisione e TM=0."},{"name": "Tempesta di Lame","description": "Con Gladioscudo o Modulo Claymore puoi spendere 10 PM per colpire fino a due creature contemporaneamente."}],"note": "Pregenerato Atlante Techno Fantasy, p. 1. Equipaggiamento e capacità non standard: consultare 'Scheda originale' per i testi. La ripartizione dei livelli delle Classi è ricostruita dalle abilità elencate: il PDF non la indica esplicitamente."},
+  {"archetype": "David LeGuin (Pregenerati Techno Fantasy, p. 2)","book": "techno","des": 6,"int": 8,"vig": 8,"vol": 10,"classes": [{"name": "Esper","lvl": 3,"skills": "Doni Psichici (Contraccolpo Psichico; Termocinesi); Orologio Cerebrale"},{"name": "Spiritista","lvl": 2,"skills": "Magia Spirituale (Guarigione, Lux)"}],"weapon": "Nessuna Arma","armor": "Nessuna Armatura","shield": "Nessuno Scudo","zenit": 70,"fixedName": "David LeGuin","fixedIdentity": "Ex Agente della Sorveglianza Neurale","fixedTheme": "Colpa","fixedOrigin": "Neon City","sourceStats": {"hp": 53,"mp": 65,"ip": 6,"def": 13,"mdef": 8,"init": -3},"sourceNotes": [{"name": "Pentagun","description": "Distanza; Precisione 【VIG + VOL】+2; 【TM + 7】 danni da luce; +2 DIF."},{"name": "Esoscheletro Psichico","description": "Difesa fissa 11; -3 Iniziativa."},{"name": "Doni Psichici","description": "Il costo dei doni è 5 PM per sezione piena dell’Orologio Cerebrale, minimo 5 e massimo 20. L’Orologio riparte vuoto a ogni scena."},{"name": "Contraccolpo Psichico","description": "Dopo che un nemico vince un Test Contrapposto contro di te o ti fa perdere PV, quel nemico perde 5 + (5 × sezioni piene dell’Orologio Cerebrale) PM e subisce confuso o scosso."},{"name": "Termocinesi","description": "Quando infliggi danni, puoi cambiarne il tipo in fuoco o ghiaccio e aumentare il danno di 2 + sezioni piene dell’Orologio Cerebrale."},{"name": "Guarigione","description": "10 PM per bersaglio; fino a tre creature; istantaneo: ciascun bersaglio recupera 40 PV."},{"name": "Lux","description": "Incantesimo offensivo 【INT + VOL】, 10 PM per bersaglio, fino a tre creature, istantaneo: 【TM + 15】 danni da luce."}],"note": "Pregenerato Atlante Techno Fantasy, p. 2. Equipaggiamento e capacità non standard: consultare 'Scheda originale' per i testi. La ripartizione dei livelli delle Classi è ricostruita dalle abilità elencate: il PDF non la indica esplicitamente."},
+  {"archetype": "Vritra (Pregenerati Techno Fantasy, p. 3)","book": "techno","des": 8,"int": 6,"vig": 10,"vol": 8,"classes": [{"name": "Mutante","lvl": 4,"skills": "Acromorfosi, Genoclepsia, Teratomorfosi (2 LA; Dynamotheria e Placophora)"},{"name": "Chimerista","lvl": 1,"skills": "Magimimesi (3 incantesimi memorizzabili)"}],"weapon": "Nessuna Arma","armor": "Nessuna Armatura","shield": "Nessuno Scudo","zenit": 470,"fixedName": "Vritra","fixedIdentity": "Corpo Sintetico - Classe Megido β","fixedTheme": "Vendetta","fixedOrigin": "Laboratori Nidavellir","sourceStats": {"hp": 60,"mp": 50,"ip": 6,"def": 9,"mdef": 7,"init": 0},"sourceNotes": [{"name": "Colpo Senz’Armi","description": "Mischia; Precisione 【DES + VIG】+1; 【TM + 8】 danni fisici. Con l’azione di Attacco puoi attaccare due volte, ma con TM=0 per entrambi gli attacchi."},{"name": "Camice Lacero","description": "+1 DIF e +1 DIF. MAG."},{"name": "Acromorfosi","description": "All’inizio del turno, durante un conflitto, scegli una Categoria per il colpo senz’armi; se arco, da fuoco o da lancio, l’arma diventa a distanza. Dura fino all’inizio del turno successivo."},{"name": "Genoclepsi","description": "Quando infliggi danno ai PNG, scopri la loro Specie. Il GM sceglie una terioforma tematica che puoi manifestare subito usando Teriomorfosi, pagando il costo in PV."},{"name": "Magimimesi","description": "Quando una bestia, un mostro o una pianta visibile lancia un incantesimo, puoi impararlo immediatamente (massimo 3 incantesimi); Test di Magia con 【VIG + VOL】."},{"name": "Teriomorfosi","description": "Usa un’azione e spendi un terzo dei PV attuali per manifestare una terioforma fino a fine scena; termina anche se perdi i sensi, muori, fai Guardia oppure usi nuovamente Teriomorfosi."},{"name": "Dynamotheria","description": "VIG aumenta di una taglia di dado, massimo d12; nei Test riusciti che usano VIG per modificare un Orologio, riempi o svuoti una sezione addizionale."},{"name": "Placophora","description": "Mentre attiva, puoi considerare DIF pari a 14."}],"note": "Pregenerato Atlante Techno Fantasy, p. 3. Equipaggiamento e capacità non standard: consultare 'Scheda originale' per i testi. La ripartizione dei livelli delle Classi è ricostruita dalle abilità elencate: il PDF non la indica esplicitamente."},
+
+  // v1.1.1: 10 classici adattati dai tre PDF; struttura e regole standard del Generatore PG.
+  {"archetype": "Blair Clarimonde (Premi Start, adattamento)","book": "premistart","des": 6,"int": 10,"vig": 8,"vol": 8,"classes": [{"name": "Oratore","lvl": 1,"skills": "Incoraggiamento"},{"name": "Spiritista","lvl": 3,"skills": "Magia Spirituale (3 LA: Lux, Guarigione, Barriera)"},{"name": "Sapiente","lvl": 1,"skills": "Lampo di Genio"}],"weapon": "Pugnale d'Acciaio","armor": "Veste del Saggio","shield": "Scudo di Bronzo","zenit": 120,"fixedName": "Blair Clarimonde","fixedIdentity": "Erede al Trono di Dunova","fixedTheme": "Dovere","fixedOrigin": "Dunova","note": "Adattamento di Blair Clarimonde da Premi Start in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Cassandra (Premi Start, adattamento)","book": "premistart","des": 10,"int": 6,"vig": 8,"vol": 8,"classes": [{"name": "Elementalista","lvl": 2,"skills": "Magia Elementale (2 LA: Arma Elementale, Velo Elementale)"},{"name": "Maestro d'Armi","lvl": 3,"skills": "Maestria con Armi da Mischia, Tempesta di Lame, Spezzaossa"}],"weapon": "Lancia Pesante ✦","armor": "Veste del Saggio","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Cassandra","fixedIdentity": "Ex Comandante dei Solcanubi","fixedTheme": "Dubbio","fixedOrigin": "Roccatempesta","note": "Adattamento di Cassandra da Premi Start in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Edgar (Premi Start, adattamento)","book": "premistart","des": 10,"int": 8,"vig": 6,"vol": 8,"classes": [{"name": "Tiratore","lvl": 3,"skills": "Tiro a Segno, Fuoco di Sbarramento, Maestria con Armi a Distanza"},{"name": "Artefice","lvl": 2,"skills": "Tecnologie (Alchimia Base), Pioggia di Pozioni"}],"weapon": "Pistola ✦","armor": "Abito da Viaggio","shield": "Scudo Runico ✦","zenit": 70,"fixedName": "Edgar","fixedIdentity": "Giovane Inventore Sopravvissuto","fixedTheme": "Speranza","fixedOrigin": "Pemble","note": "Adattamento di Edgar da Premi Start in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Lavigne Fallbright (Premi Start, adattamento)","book": "premistart","des": 8,"int": 6,"vig": 10,"vol": 8,"classes": [{"name": "Furia","lvl": 2,"skills": "Adrenalina, Spirito Indomito"},{"name": "Lama Oscura","lvl": 2,"skills": "Fendente Oscuro (2 LA)"},{"name": "Guardiano","lvl": 1,"skills": "Protezione"}],"weapon": "Spadone ✦","armor": "Corazza Runica ✦","shield": "Nessuno Scudo","zenit": 120,"fixedName": "Lavigne Fallbright","fixedIdentity": "Principessa Senza Regno","fixedTheme": "Colpa","fixedOrigin": "Armorica","note": "Adattamento di Lavigne Fallbright da Premi Start in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Mako (Premi Start, adattamento)","book": "premistart","des": 6,"int": 8,"vig": 8,"vol": 10,"classes": [{"name": "Chimerista","lvl": 2,"skills": "Imitazione Magica, Linguaggio delle Belve"},{"name": "Elementalista","lvl": 1,"skills": "Magia Elementale (Ignis)"},{"name": "Furia","lvl": 2,"skills": "Spirito Indomito (2 LA)"}],"weapon": "Bastone","armor": "Veste del Saggio","shield": "Nessuno Scudo","zenit": 270,"fixedName": "Mako","fixedIdentity": "Custode della Foresta Rossa","fixedTheme": "Vendetta","fixedOrigin": "Foresta Rossa","note": "Adattamento di Mako da Premi Start in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Adelle (Bravely Default II, adattamento)","book": "bravely","des": 10,"int": 6,"vig": 8,"vol": 8,"classes": [{"name": "Furia","lvl": 3,"skills": "Adrenalina (2 LA), Spirito Indomito"},{"name": "Maestro d'Armi","lvl": 2,"skills": "Spezzaossa, Maestria con Armi da Mischia"}],"weapon": "Colpo Senz'Armi","armor": "Tunica da Lotta","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Adelle","fixedIdentity": "Pragmatica Guardia del Corpo","fixedTheme": "Dovere (proteggere e aiutare Elvis)","fixedOrigin": "","note": "Adattamento di Adelle da Bravely Default II in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Anihal (Bravely Default II, adattamento)","book": "bravely","des": 8,"int": 6,"vig": 10,"vol": 8,"classes": [{"name": "Chimerista","lvl": 2,"skills": "Imitazione Magica, Linguaggio delle Belve"},{"name": "Maestro d'Armi","lvl": 2,"skills": "Tempesta di Lame, Maestria con Armi da Mischia"},{"name": "Sapiente","lvl": 1,"skills": "Analisi Rapida"}],"weapon": "Lancia Pesante ✦","armor": "Abito da Viaggio","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Anihal","fixedIdentity": "Domatrice Sopravvissuta","fixedTheme": "Dubbio (Bernard è una persona malvagia?)","fixedOrigin": "","note": "Adattamento di Anihal da Bravely Default II in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Elvis (Bravely Default II, adattamento)","book": "bravely","des": 6,"int": 10,"vig": 6,"vol": 10,"classes": [{"name": "Elementalista","lvl": 3,"skills": "Magia Elementale (3 LA: Fulgur, Glacies, Ignis)"},{"name": "Spiritista","lvl": 2,"skills": "Magia Spirituale (2 LA: Guarigione, Barriera)"}],"weapon": "Tomo","armor": "Veste del Saggio","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Elvis","fixedIdentity": "Eccentrico Studioso di Asterischi","fixedTheme": "Ambizione (scoprire i segreti degli asterischi)","fixedOrigin": "","note": "Adattamento di Elvis da Bravely Default II in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Gloria (Bravely Default II, adattamento)","book": "bravely","des": 8,"int": 8,"vig": 6,"vol": 10,"classes": [{"name": "Spiritista","lvl": 3,"skills": "Magia Spirituale (3 LA: Guarigione, Barriera, Aura)"},{"name": "Sapiente","lvl": 2,"skills": "Analisi Rapida, Lampo di Genio"}],"weapon": "Arco Corto","armor": "Veste del Saggio","shield": "Nessuno Scudo","zenit": 170,"fixedName": "Gloria","fixedIdentity": "Solenne Principessa di Musa","fixedTheme": "Speranza (riportare i Cristalli all’equilibrio)","fixedOrigin": "","note": "Adattamento di Gloria da Bravely Default II in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+  {"archetype": "Seth (Bravely Default II, adattamento)","book": "bravely","des": 6,"int": 8,"vig": 10,"vol": 8,"classes": [{"name": "Guardiano","lvl": 2,"skills": "Protezione, Maestria Difensiva"},{"name": "Maestro d'Armi","lvl": 2,"skills": "Spezzaossa, Maestria con Armi da Mischia"},{"name": "Oratore","lvl": 1,"skills": "Incoraggiamento"}],"weapon": "Ascia ✦","armor": "Corazza di Bronzo ✦","shield": "Scudo di Bronzo","zenit": 120,"fixedName": "Seth","fixedIdentity": "Marinaio da una Terra Lontana","fixedTheme": "Pietà (aiutare le persone senza pregiudizi)","fixedOrigin": "","note": "Adattamento di Seth da Bravely Default II in un normale personaggio classico di livello 5. Classi, abilità ed equipaggiamento sono quelli standard del generatore; non riproducono necessariamente la scheda della fonte."},
+
   // ==========================================================================
   // MANUALE BASE (20 Personaggi Classici - pagg. 172-175)
   // ==========================================================================
@@ -4227,6 +4268,9 @@ function getValidPresets() {
     if (p.book === "carotosi") {
       return inc.bonus && p.classes.every(c => CLASSES_DB[c.name] && inc[CLASSES_DB[c.name].book]);
     }
+    // I tutorial e i pregenerati Bravely sono selezionabili senza attivare Atlanti:
+    // le loro Classi sono ricostruzioni editoriali, non livelli attribuiti dalle fonti.
+    if (p.book === "premistart" || p.book === "bravely") return true;
     return !!inc[p.book];
   });
 }
@@ -4429,6 +4473,28 @@ function upgradeDieSize(die) {
 }
 
 let currentPresetNote = "";
+let currentSourcePregen = null;
+function refreshSourcePregenPanel() {
+  const el = document.getElementById("technoPregenSource");
+  if (!el) return;
+  if (!currentSourcePregen) { el.style.display="none"; el.textContent=""; return; }
+  const p = currentSourcePregen, st = p.sourceStats;
+  const modInit = st.init === null || st.init === undefined ? "non indicato" : ((st.init >= 0 ? "+" : "") + st.init);
+  const currency = p.sourceCurrency ? (p.sourceMoney + " " + p.sourceCurrency) : (p.zenit + " Zenit");
+  const lines = ["SCHEDA ORIGINALE · " + p.fixedName];
+  if (p.sourceDocument) lines.push("Fonte: " + p.sourceDocument + ", p. " + (p.sourcePage || "?"));
+  if (p.sourceJob) lines.push("Job originali: " + p.sourceJob);
+  if (p.sourceGender) lines.push("Genere: " + p.sourceGender);
+  lines.push("Identità: " + p.fixedIdentity + " · Tema: " + p.fixedTheme + (p.fixedOrigin ? " · Origine: " + p.fixedOrigin : ""));
+  if (p.sourceLore) lines.push("Contesto: " + p.sourceLore);
+  lines.push("PV " + st.hp + " · PM " + st.mp + " · PI " + st.ip + " · DIF " + st.def + " · DIF. MAG. " + st.mdef + " · Mod. Iniziativa " + modInit);
+  lines.push("Risorse iniziali: " + currency + (p.sourceFabula != null ? " · Punti Fabula " + p.sourceFabula : ""), "", "EQUIPAGGIAMENTO E CAPACITÀ:");
+  p.sourceNotes.forEach(n => lines.push("• " + n.name + ": " + n.description));
+  lines.push("", "Nota: il PDF non indica i livelli delle Classi di Fabula Ultima. La loro ripartizione qui è una proposta per il generatore, non un dato della fonte. Per giocare il pregenerato con le abilità esatte, fai riferimento alla scheda originale riportata sopra.");
+  if (p.book === "bravely") lines.push("Valuta: la scheda usa PG, non Zenit. Il CODEX non applica tassi di cambio: per questa voce il campo Zenit resta a 0.");
+  el.textContent = lines.join("\n"); el.style.display="block";
+}
+
 
 // Converte la stringa delle abilità di un Personaggio Classico nei gradi esatti per Fultimator
 function buildPresetFultSkills(cName, totalLvl, skillsStr) {
@@ -4522,6 +4588,8 @@ function generateRandomPC() {
   const usePreset = document.getElementById("chkPreset").checked && targetLvl === 5;
   const availClasses = getAvailableClasses();
   currentPresetNote = "";
+  currentSourcePregen = null;
+  refreshSourcePregenPanel();
 
   const rName = NAMES_LIST[Math.floor(Math.random() * NAMES_LIST.length)];
   const rPronoun = PRONOUNS_LIST[Math.floor(Math.random() * PRONOUNS_LIST.length)];
@@ -4542,6 +4610,16 @@ function generateRandomPC() {
 
     const chosenPreset = validPresets[Math.floor(Math.random() * validPresets.length)];
     currentPresetNote = chosenPreset.note || "";
+    currentSourcePregen = chosenPreset.sourceStats ? chosenPreset : null;
+    if (chosenPreset.fixedName) {
+      document.getElementById("pcName").value = chosenPreset.fixedName;
+      document.getElementById("pcPronouns").value = "";
+      document.getElementById("pcIdentity").value = chosenPreset.fixedIdentity;
+      document.getElementById("pcTheme").value = chosenPreset.fixedTheme;
+      document.getElementById("pcOrigin").value = chosenPreset.fixedOrigin;
+      updateHeaderBanner();
+    }
+    refreshSourcePregenPanel();
     document.getElementById("archetypeBadge").innerText = `Personaggio Classico: ${chosenPreset.archetype}`;
     document.getElementById("profileLabel").innerText = `Archetipo del Manuale: ${chosenPreset.archetype}`;
 
@@ -4764,6 +4842,15 @@ function recalculateStats() {
   const totalMDef = int + armor.mdefBonus + shield.mdefBonus + (weapon.mdefBonus || 0);
   const totalInit = armor.init + shield.init;
 
+  const sourceSt = currentSourcePregen && currentSourcePregen.sourceStats;
+  if (sourceSt) {
+    document.getElementById("statHP").innerText = `${sourceSt.hp} (${Math.floor(sourceSt.hp/2)})`;
+    document.getElementById("statMP").innerText = String(sourceSt.mp);
+    document.getElementById("statIP").innerText = String(sourceSt.ip);
+    document.getElementById("statDef").innerText = String(sourceSt.def);
+    document.getElementById("statMDef").innerText = String(sourceSt.mdef);
+    document.getElementById("statInit").innerText = sourceSt.init === null || sourceSt.init === undefined ? "—" : (sourceSt.init >= 0 ? `+${sourceSt.init}` : String(sourceSt.init));
+  } else {
   document.getElementById("statHP").innerText = `${maxHP} (${crisis})`;
   document.getElementById("statMP").innerText = `${maxMP}`;
   document.getElementById("statIP").innerText = `${maxIP}`;
@@ -4771,8 +4858,10 @@ function recalculateStats() {
   document.getElementById("statMDef").innerText = `${totalMDef}`;
   document.getElementById("statInit").innerText = `${totalInit >= 0 ? "+" + totalInit : totalInit}`;
 
+  }
+
   const noteSuffix = currentPresetNote ? ` — 📌 ${currentPresetNote}` : "";
-  document.getElementById("weaponDetails").value = `${weapon.name}: Precisione ${weapon.stats} | Danno ${weapon.dmg} (${weapon.hands === 2 ? "A due mani" : weapon.hands === 1 ? "A una mano" : "Senz'armi"})${noteSuffix}`;
+  document.getElementById("weaponDetails").value = currentSourcePregen ? "Armi ed equipaggiamento originali: vedi Scheda originale del pregenerato (riportata sotto); il menu equipaggiamento standard non li riproduce." : `${weapon.name}: Precisione ${weapon.stats} | Danno ${weapon.dmg} (${weapon.hands === 2 ? "A due mani" : weapon.hands === 1 ? "A una mano" : "Senz'armi"})${noteSuffix}`;
 
   let martialViolation = false;
   if (weapon.martial && !weapon.ranged && !perms.mMelee) martialViolation = true;
@@ -4903,17 +4992,25 @@ function exportFultimatorJSON() {
     fultimatorNotes.push({ name: "Potere Zero: " + document.getElementById("zeroName").value, description: `Innesco: ${document.getElementById("zeroTrigger").value}\nEffetto: ${document.getElementById("zeroEffect").value}` });
   }
 
+  if (currentSourcePregen) {
+    fultimatorNotes.push({name:"Origine e limiti del pregenerato",description: currentSourcePregen.note});
+    currentSourcePregen.sourceNotes.forEach(n => fultimatorNotes.push({name:n.name,description:n.description}));
+  }
+  const exportedHP = currentSourcePregen ? currentSourcePregen.sourceStats.hp : maxHP;
+  const exportedMP = currentSourcePregen ? currentSourcePregen.sourceStats.mp : maxMP;
+  const exportedIP = currentSourcePregen ? currentSourcePregen.sourceStats.ip : maxIP;
+
   const fultimatorJSON = {
     uid: "local", name: document.getElementById("pcName").value, lvl: totalLvl,
     info: { pronouns: document.getElementById("pcPronouns").value, identity: document.getElementById("pcIdentity").value, theme: document.getElementById("pcTheme").value, origin: document.getElementById("pcOrigin").value, bonds: [], description: fultimatorNotes.map(n => `${n.name}: ${n.description}`).join("\n\n"), fabulapoints: 3, exp: 0, zenit: parseInt(document.getElementById("pcZenit").value) || 0, imgurl: "" },
     attributes: { dexterity: des, insight: int, might: vig, willpower: vol },
-    stats: { hp: { max: maxHP, current: maxHP }, mp: { max: maxMP, current: maxMP }, ip: { max: maxIP, current: maxIP } },
+    stats: { hp: { max: exportedHP, current: exportedHP }, mp: { max: exportedMP, current: exportedMP }, ip: { max: exportedIP, current: exportedIP } },
     statuses: { slow: false, dazed: false, enraged: false, weak: false, shaken: false, poisoned: false, dexUp: false, insUp: false, migUp: false, wlpUp: false },
     classes: fultimatorClasses, weapons: fultimatorWeapons,
     armor: aObj.cost > 0 ? [{ name: aObj.name, def: aObj.defFixed || 0, defbonus: aObj.defBonus, mdefbonus: aObj.mdefBonus, init: aObj.init, isEquipped: true }] : [],
     shields: sObj.cost > 0 ? [{ name: sObj.name, defbonus: sObj.defBonus, mdefbonus: sObj.mdefBonus, init: sObj.init, isEquipped: true }] : [],
     notes: fultimatorNotes,
-    modifiers: { hp: bonusMods.hp, mp: bonusMods.mp, ip: bonusMods.ip, def: 0, mdef: 0, init: 0, meleePrec: 0, rangedPrec: 0, magicPrec: 0 },
+    modifiers: { hp: bonusMods.hp + (currentSourcePregen ? exportedHP-maxHP : 0), mp: bonusMods.mp + (currentSourcePregen ? exportedMP-maxMP : 0), ip: bonusMods.ip + (currentSourcePregen ? exportedIP-maxIP : 0), def: 0, mdef: 0, init: 0, meleePrec: 0, rangedPrec: 0, magicPrec: 0 },
     id: Math.floor(Math.random() * 10000),
     immunities: { slow: false, dazed: false, enraged: false, weak: false, shaken: false, poisoned: false },
     dataType: "pc"
@@ -4925,6 +5022,8 @@ function exportFultimatorJSON() {
 }
 
 function importFultimatorJSON(event) {
+  currentSourcePregen = null;
+  refreshSourcePregenPanel();
   const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
